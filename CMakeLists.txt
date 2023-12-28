@@ -12,6 +12,8 @@ project(FRIClient VERSION 1.0.0
 ######################
 set(FRIClient_SDK_NAME "FRI-Client-SDK_Cpp")
 option(BUILD_FRI_APPS "Build FRIClient example applications" OFF)
+message(STATUS "Configuring Binary ${CMAKE_CURRENT_BINARY_DIR}")
+message(STATUS "Configuring Source ${CMAKE_CURRENT_SOURCE_DIR}")
 
 #########################################
 # extract the FRIClient from the zip file
@@ -49,8 +51,8 @@ set(FRICLIENT_VERSION_MAJOR ${CMAKE_MATCH_1})
 set(FRICLIENT_VERSION_MINOR ${CMAKE_MATCH_2})
 set(FRICLIENT_VERSION ${FRICLIENT_VERSION_MAJOR}.${FRICLIENT_VERSION_MINOR})
 
-if (NOT FRICLIENT_VERSION STREQUAL "1.15")
-    message(FATAL_ERROR "Expected FRIClient ersion 1.15, found: " ${FRICLIENT_VERSION})
+if (NOT FRICLIENT_VERSION STREQUAL "1.17")
+    message(FATAL_ERROR "Expected FRIClient ersion 1.17, found: " ${FRICLIENT_VERSION})
 endif()
 
 message("Found FRIClient of version: " ${FRICLIENT_VERSION})
@@ -58,7 +60,7 @@ message("Found FRIClient of version: " ${FRICLIENT_VERSION})
 #################################
 # define FRIClient library target
 #################################
-message(STATUS "Configuring FRIClient version ${FRI_VERSION}")
+message(STATUS "Configuring FRIClient version ${FRICLIENT_VERSION}")
 file(GLOB_RECURSE NANOPB_SOURCES RELATIVE ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}/${FRIClient_SDK_NAME}/src/nanopb-${NANOPB_VERSION}/*.c
 )
@@ -126,10 +128,11 @@ write_basic_package_version_file(
     VERSION ${FRICLIENT_VERSION}
     COMPATIBILITY SameMajorVersion
 )
-
+#include(GNUInstallDirs)
 install(TARGETS FRIClient
     EXPORT FRIClientTargets
     LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib  # Add this line
     INCLUDES DESTINATION include
 )
 
@@ -179,3 +182,29 @@ if (BUILD_FRI_APPS)
     build_fri_example(SimulatedTransformationProvider)
     build_fri_example(TransformationProvider)
 endif(BUILD_FRI_APPS)
+
+
+################
+# build masters
+################
+if (BUILD_MASTERS)
+file(GLOB_RECURSE MASTERS_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/masters/*.cpp)
+#file(GLOB_RECURSE MASTERS_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/masters/src *.cpp)
+find_library(TEST_LIBRARY FRIClient build)
+add_executable(mastersAPP
+        ${MASTERS_SOURCES}
+)
+
+target_include_directories(mastersAPP
+        PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}/${FRIClient_SDK_NAME}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/masters/include
+        # Add other include directories if needed
+)
+
+target_link_libraries(mastersAPP
+        LINK_PUBLIC ${TEST_LIBRARY}
+        #${CMAKE_CURRENT_BINARY_DIR}/${FRIClient_SDK_NAME}/FRIClient
+        # Add other libraries if needed
+)
+endif (BUILD_MASTERS)
